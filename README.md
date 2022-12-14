@@ -8,6 +8,7 @@ My measly attempts at solving the [Advent of Code](https://adventofcode.com/) ch
 * Day 8
 * Day 9
 * Day 10
+* Day 14
 
 ## Where I struggled
 
