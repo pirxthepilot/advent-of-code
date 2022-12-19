@@ -22,4 +22,5 @@ Code works in the test set but not actual input. Took forever to find the bug in
 
 ### Day 15, part 2
 
-(Not yet completed) Works in test. Running against input.txt takes too long. Need to re-evaluate the logic.
+~~(Not yet completed) Works in test. Running against input.txt takes too long. Need to re-evaluate the logic.~~
+Update: Caching saved the day!

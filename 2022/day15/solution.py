@@ -1,4 +1,5 @@
 import re
+from collections import defaultdict
 
 
 def get_neighbors(point):
@@ -28,6 +29,40 @@ class Map:
         for pair in input_:
             sensor, beacon = pair
             self.mapping[sensor] = find_distance(sensor, beacon)
+        self.cache = defaultdict(dict)
+
+    def _add_to_cache(self, sensor, row_y, result):
+        _, sy = sensor
+        start_x, length = result
+
+        count = 0
+        if sy - row_y < 0:
+            c_row = row_y
+            c_start_x = start_x
+            c_length = length
+            while c_length > 0:
+                self.cache[sensor][c_row] = c_start_x, c_length
+                count += 1
+                c_row += 1
+                c_start_x += 1
+                c_length -= 2
+
+        else:
+            for i in range(0, sy - row_y + 1):
+                # Top
+                c_row = row_y + i
+                c_start_x = start_x - i
+                c_length = length + (2*i)
+                self.cache[sensor][c_row] = c_start_x, c_length
+                count += 1
+
+                # Bottom (mirror image)
+                if c_row != sy:
+                    c_row = c_row + ((sy - c_row)*2)
+                    self.cache[sensor][c_row] = c_start_x, c_length
+                    count += 1
+
+        # print(f"Added {count} items to cache for sensor {sensor}!")
 
     def no_beacons_in_row(self, row_y):
         include = set()
@@ -45,69 +80,37 @@ class Map:
         return include
 
     def no_beacons_by_sensor(self, sensor, row_y):
-        sx, sy = sensor
+        if sensor in self.cache and self.cache[sensor].get(row_y):
+            return self.cache[sensor][row_y]
+
+        sx, _ = sensor
         distance = self.mapping[sensor]
-        step = 1
+        step = 0
         while find_distance(sensor, (sx + step, row_y)) < distance:
             step += 1
         start_x = sx - step
-        return start_x, step * 2
+
+        if step > 0:
+            result = (start_x, (step * 2) + 1)
+            self._add_to_cache(sensor, row_y, result)
+            return result
 
     def get_beacon_location(self, max_coord=4000000):
         # Part 2
         for y in range(max_coord + 1):
+            # print(y)
             x = 0
-            while x <= max_coord + 1:
+            while 0 <= x <= max_coord + 1:
                 for sensor in self.mapping.keys():
-                    start_x, length = self.no_beacons_by_sensor(sensor, y)
-                    print((x, y), start_x, length)
-                    if start_x <= x <= start_x + length:
-                        x = start_x + length + 1
-                        print(f"New x: {x}")
+                    no_beacons = self.no_beacons_by_sensor(sensor, y)
+                    if no_beacons is None:
+                        continue
+                    start_x, length = no_beacons
+                    if start_x <= x < start_x + length:
+                        x = start_x + length
                         break
                 else:
                     return (x, y)
-        # Pregenerate x values
-        # x_set = set([x for x in range(max_coord + 1)])
-
-        # for y in range(max_coord + 1):
-        #     print(y)
-        #     no_beacons_in_x = self.no_beacons_in_row(y)
-        #     diff = x_set - no_beacons_in_x
-        #     if diff:
-        #         return (diff.pop(), y)
-            # for d in list(diff):
-            #     if 0 <= d <= max_coord:
-            #         return (d, y)
-            # no_beacons_count = len(self.no_beacons_in_row(y))
-            # print(f"{y}: {no_beacons_count}")
-            # if no_beacons_count <= max_coord:
-            #     print("  Beacon must be in this row ({y})!")
-            #     for x in range(max_coord + 1):
-            #         distress = (x, y)
-            #         for sensor, distance in self.mapping.items():
-            #             if find_distance(sensor, distress) <= distance:
-            #                 break
-            #         else:
-            #             return distress
-            # x = 0
-            # while x <= max_coord:
-            #     distress = (x, y)
-            #     print(distress)
-            #     if distress in no_beacons:
-            #         # skip this many x
-            #         print(f"Skip {len(no_beacons)}")
-            #         x += len(no_beacons)
-            #     else:
-            #         return distress
-
-            # for x in range(max_coord + 1):
-            #     distress = (x, y)
-            #     for sensor, distance in self.mapping.items():
-            #         if find_distance(sensor, distress) <= distance:
-            #             break
-            #     else:
-            #         return distress
 
 
 pairs = []
@@ -130,11 +133,9 @@ print(answer_1)
 
 
 # Part 2
-# print(m.mapping)
-# print(m.max_x(4000000))
-# print(m.max_y(4000000))
+
 # p2x, p2y = m.get_beacon_location(20)
-# p2x, p2y = m.get_beacon_location(4000000)
-# print((p2x, p2y))
-# answer_2 = (p2x * 4000000) + p2y
-# print(answer_2)
+p2x, p2y = m.get_beacon_location(4000000)
+print((p2x, p2y))
+answer_2 = (p2x * 4000000) + p2y
+print(answer_2)
