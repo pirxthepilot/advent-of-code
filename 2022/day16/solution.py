@@ -12,7 +12,7 @@ class Path:
     pressure: int = 0
 
     def summarize(self):
-        return f"pressure: {self.pressure}, visited: {len(self.visited)}, opened: {len(self.opened)}, time: {self.time_left}"
+        return f"pressure: {self.pressure}, opened: {len(self.opened)}, time: {self.time_left}"
 
 
 class Map:
@@ -20,6 +20,7 @@ class Map:
         self.graph = graph
         self.rates = rates
         self.map = self._get_pair_distances()
+        self.high_score_cache = {}
 
     def _get_pair_distances(self):
         # included_nodes = [n for n in self.graph.keys() if self.rates[n] != 0]
@@ -46,16 +47,11 @@ class Map:
         
         return distance_map
     
-    def get_max_pressure(self, start_node):
-        queue = deque([Path(start_node)])
-        high_score_cache = {}
+    def get_max_pressure(self, start_node, time_left=30):
+        queue = deque([Path(start_node, time_left=time_left)])
 
         while queue:
             path = queue.popleft()
-
-            # No time left
-            if path.time_left == 0:
-                yield path
 
             # Open valve if applicable
             if (
@@ -69,10 +65,10 @@ class Map:
                 path.pressure += path.time_left * self.rates[path.valve]
 
                 # Add to cache if pressure is highest
-                if frozenset(path.opened) not in high_score_cache:
-                    high_score_cache[frozenset(path.opened)] = path.pressure
-                elif high_score_cache[frozenset(path.opened)] < path.pressure:
-                    high_score_cache[frozenset(path.opened)] = path.pressure
+                if frozenset(path.opened) not in self.high_score_cache:
+                    self.high_score_cache[frozenset(path.opened)] = path.pressure
+                elif self.high_score_cache[frozenset(path.opened)] < path.pressure:
+                    self.high_score_cache[frozenset(path.opened)] = path.pressure
                 else:  # Opened valves produce lower score than current highest; no need to continue
                     continue
             yield path
@@ -106,10 +102,27 @@ with open("input.txt") as f:
 # Part 1
 
 m = Map(graph, rates)
-# print(m.map)
 
 highest_pressure = 0
 for result in m.get_max_pressure("AA"):
     if result.pressure > highest_pressure:
         highest_pressure = result.pressure
         print(result)
+
+
+# Part 2
+
+m2 = Map(graph, rates)
+
+for result in m2.get_max_pressure("AA", time_left=26):
+    # We only need to run this to generate high_score_cache
+    pass
+
+highest_pressure = 0
+for pair in permutations(m2.high_score_cache.keys(), 2):
+    p1, p2 = pair
+    if p1.isdisjoint(p2):
+        total = m2.high_score_cache[p1] + m2.high_score_cache[p2]
+        if total > highest_pressure:
+            highest_pressure = total
+            print(f"Highest so far is {total}")
