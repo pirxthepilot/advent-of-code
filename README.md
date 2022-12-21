@@ -24,3 +24,7 @@ Code works in the test set but not actual input. Took forever to find the bug in
 
 ~~(Not yet completed) Works in test. Running against input.txt takes too long. Need to re-evaluate the logic.~~
 Update: Caching saved the day!
+
+### Day 16, part 1
+
+Needed a [hint](https://www.reddit.com/r/adventofcode/comments/zo21au/comment/j0nz8df/)
