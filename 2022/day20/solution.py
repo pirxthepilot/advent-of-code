@@ -55,18 +55,17 @@ class Encrypted:
             if c.value == 0:
                 return c
     
-    def _find_dest(self, c: Cipher, origin_value: int, direction: str) -> Cipher:
+    def _find_dest(self, c: Cipher, origin_value: int) -> Cipher:
         queue = deque([c])
         search_level = 0
+        target_level = origin_value % (len(self.ciphers)-1)
         while queue:
             node = queue.popleft()
             search_level += 1
-            if search_level == abs(origin_value):
-                # print(f"{origin_value} will be inserted to the {direction} of {node}")
+            if search_level == target_level:
                 return node
             else:
-                queue.append(getattr(node, direction))
-
+                queue.append(node.right)
 
     def move(self, c: Cipher) -> None:
         if c.value == 0:
@@ -76,17 +75,13 @@ class Encrypted:
         r = c.right
         self.unlink(c)
 
-        if c.value > 0:
-            dest = self._find_dest(r, c.value, "right")
-            self.insert(c, dest, dest.right)
-        elif c.value < 0:
-            dest = self._find_dest(l, c.value, "left")
-            self.insert(c, dest.left, dest)
+        dest = self._find_dest(r, c.value)
+        self.insert(c, dest, dest.right)
     
     def get_state(self):
         current = self.ciphers[0]
         visited = []
-        while current.right not in visited:
+        while current not in visited:
             visited.append(current)
             current = current.right
         return [c.value for c in visited]
@@ -94,12 +89,18 @@ class Encrypted:
     def print_state(self):
         print(self.get_state())
     
-    def run(self):
-        for idx in range(len(self.ciphers)):
-            cur_uuid = self.pointers[idx%len(self.pointers)]
-            self.move(self._find_cipher(cur_uuid))
-        self.print_state()
+    def apply_decryption_key(self, decryption_key: int) -> None:
+        for c in self.ciphers:
+            c.value *= decryption_key
     
+    def run(self, rounds: int = 1):
+        for _ in range(rounds):
+            print(f"Round {_}")
+            for idx in range(len(self.ciphers)):
+                cur_uuid = self.pointers[idx%len(self.pointers)]
+                self.move(self._find_cipher(cur_uuid))
+        # self.print_state()
+
     def solve(self, *nth_values: int) -> int:
         total = 0
 
@@ -116,19 +117,31 @@ class Encrypted:
         return total
 
 
-ciphers = []
-with open("test.txt") as f:
-# with open("input.txt") as f:
-    for line in f.readlines():
-        c = Cipher(int(line.strip()))
-        if len(ciphers) > 0:
-            Encrypted.link(ciphers[-1], c)
-        ciphers.append(c)
+def gen_ciphers():
+    ciphers = []
+    # with open("test.txt") as f:
+    with open("input.txt") as f:
+        for line in f.readlines():
+            c = Cipher(int(line.strip()))
+            if len(ciphers) > 0:
+                Encrypted.link(ciphers[-1], c)
+            ciphers.append(c)
+    Encrypted.link(ciphers[-1], ciphers[0])
+    return ciphers
 
-Encrypted.link(ciphers[-1], ciphers[0])
 
+# Part 1
 
-e = Encrypted(ciphers)
+e = Encrypted(gen_ciphers())
 e.run()
 answer_1 = e.solve(*[1000, 2000, 3000])
 print(answer_1)
+
+
+# Part 2
+
+e2 = Encrypted(gen_ciphers())
+e2.apply_decryption_key(811589153)
+e2.run(10)
+answer_2 = e2.solve(*[1000, 2000, 3000])
+print(answer_2)
