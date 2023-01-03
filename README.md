@@ -30,3 +30,7 @@ Update: Caching saved the day!
 Needed a [hint](https://www.reddit.com/r/adventofcode/comments/zo21au/comment/j0nz8df/)
 
 Also, not sure why my part 2 test result is off by two but correct against actual input??
+
+### Day 19, part 1
+
+Needed hints and mostly took forever to find the bug in my code :/
