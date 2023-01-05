@@ -33,4 +33,4 @@ Also, not sure why my part 2 test result is off by two but correct against actua
 
 ### Day 19, part 1
 
-Needed hints and mostly took forever to find the bug in my code :/
+Needed hints (esp. [this](https://www.reddit.com/r/adventofcode/comments/zpy5rm/2022_day_19_what_are_your_insights_and/)) and mostly took forever to find the bug in my code :/

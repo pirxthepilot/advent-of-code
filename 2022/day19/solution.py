@@ -1,6 +1,6 @@
 import re
 import sys
-from collections import deque
+from collections import defaultdict, deque
 from dataclasses import dataclass
 from math import ceil, floor
 from typing import Tuple
@@ -78,12 +78,45 @@ class BuildOrder:
 
         # Initial state
         self.state = State(self.timer, r_ore=1)
-    
+
+        # Cache
+        self.geocache = defaultdict(tuple)
+
     def print_stats(self):
         print(f"Blueprint {self.blueprint_id}:")
         print(f"  Costs: {self.costs}")
         print(f"  State: {self.state}")
     
+    def _better_than_cache(self, state: State) -> bool:
+        if not self.geocache[state.timer]:
+            self.geocache[state.timer] = (
+                state.i_geode,
+                state.r_ore,
+                state.r_clay,
+                state.r_obsidian,
+                state.r_geode,
+            )
+            return True
+
+        ci_ge, cr_or, cr_cl, cr_ob, cr_ge = self.geocache[state.timer]
+        if (
+            cr_or == state.r_ore and
+            cr_cl == state.r_clay and
+            cr_ob == state.r_obsidian and
+            cr_ge == state.r_geode
+        ):
+            if ci_ge < state.i_geode:
+                self.geocache[state.timer] = (
+                    state.i_geode,
+                    state.r_ore,
+                    state.r_clay,
+                    state.r_obsidian,
+                    state.r_geode,
+                )
+                return True
+            return False
+        return True
+
     def _gen_next_state(self, state: State, turns: int) -> State:
         """ Create the next state based on current state """
         # Updated inventory
@@ -105,8 +138,14 @@ class BuildOrder:
         )
     
     def _next_ore_robot(self, state: State):
+        if state.r_obsidian > 0:
+            return self._gen_next_state(state, state.timer)
+        
+        if state.r_geode > 0:
+            return None
+        
         max_ore_for_next_robot = max([
-            self.costs["ore"]["ore"],
+            # self.costs["ore"]["ore"],
             self.costs["clay"]["ore"],
             self.costs["obsidian"]["ore"],
             self.costs["geode"]["ore"],
@@ -130,6 +169,9 @@ class BuildOrder:
         return build_state
 
     def _next_clay_robot(self, state: State):
+        if state.r_geode > 0:
+            return None
+
         max_ore_for_next_robot = max([
             self.costs["obsidian"]["clay"],
         ])
@@ -149,18 +191,14 @@ class BuildOrder:
         build_state.i_ore -= cost * qty
         build_state.r_clay += qty 
 
-        if build_state.i_clay < 0:
-            print(f"Violation: {build_state}")
-            print(f"  orig: {state}")
-            print(f"  harvest: {harvest_state}")
-            print(f"  cost: {cost} turns: {turns} qty: {qty}")
-            exit()
-
         return build_state
 
     def _next_obsidian_robot(self, state: State):
         if state.r_clay == 0:
-            return "discard"
+            return None
+
+        if state.r_geode >= 2 and state.r_obsidian >= state.r_geode:
+            return None
 
         max_ore_for_next_robot = max([
             self.costs["geode"]["obsidian"],
@@ -197,8 +235,8 @@ class BuildOrder:
             state.r_clay == 0 or
             state.r_obsidian == 0
         ):
-            return "discard"
-
+            return None
+        
         cost_o = self.costs["geode"]["ore"]
         cost_b = self.costs["geode"]["obsidian"]
 
@@ -233,30 +271,32 @@ class BuildOrder:
 
         while queue:
             state = queue.popleft()
+
             if state.timer == 0:
                 yield state
             elif state not in visited:
+                # Last few turns - do not branch anymore
+                if state.timer == 1:
+                    queue.append(self._gen_next_state(state, state.timer))
+                    continue
+                
+                # Potential to max - discard if none
+                if not self._better_than_cache(state):
+                    continue
+
                 # Possible next states
-                has_none = False
                 for next_state in [
                     self._next_ore_robot(state),
                     self._next_clay_robot(state),
                     self._next_obsidian_robot(state),
                     self._next_geode_robot(state),
                 ]:
-                    if next_state == "discard":
-                        pass
-                    elif next_state is None:
-                        has_none = True
-                    else:
+                    if next_state is not None:
                         queue.append(next_state)
 
-                if has_none is True: 
-                    queue.append(self._gen_next_state(state, state.timer))
 
-
-with open("test.txt") as f:
-# with open("input.txt") as f:
+# with open("test.txt") as f:
+with open("input.txt") as f:
     blueprints = [l.strip() for l in f.readlines()]
 
 
@@ -266,7 +306,6 @@ if int(PART) == 1:
     quality_levels = []
     for blueprint in blueprints:
         bp = BuildOrder(blueprint, 24)
-        max_obsidian = 0
         max_geode = 0
         for state in bp.run():
             if state.i_geode > max_geode:
@@ -284,8 +323,8 @@ if int(PART) == 1:
 
 elif int(PART) == 2:
     geode_product = 1
-    for blueprint in blueprints:
-    # for blueprint in blueprints[:3]:
+    # for blueprint in blueprints[1:2]:
+    for blueprint in blueprints[:3]:
         bp = BuildOrder(blueprint, 32)
         max_geode = 0
         for state in bp.run():
