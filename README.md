@@ -31,6 +31,6 @@ Needed a [hint](https://www.reddit.com/r/adventofcode/comments/zo21au/comment/j0
 
 Also, not sure why my part 2 test result is off by two but correct against actual input??
 
-### Day 19, part 1
+### Day 19, both parts
 
 Needed hints (esp. [this](https://www.reddit.com/r/adventofcode/comments/zpy5rm/2022_day_19_what_are_your_insights_and/)) and mostly took forever to find the bug in my code :/

@@ -12,6 +12,15 @@ except IndexError:
     print("Specify a part to run")
     exit()
 
+try:
+    TEST = sys.argv[2]
+    if TEST == "test":
+        TEST=True
+    else:
+        TEST=False
+except IndexError:
+    TEST=False
+
 
 @dataclass
 class State:
@@ -138,14 +147,10 @@ class BuildOrder:
         )
     
     def _next_ore_robot(self, state: State):
-        if state.r_obsidian > 0:
-            return self._gen_next_state(state, state.timer)
-        
         if state.r_geode > 0:
             return None
-        
+
         max_ore_for_next_robot = max([
-            # self.costs["ore"]["ore"],
             self.costs["clay"]["ore"],
             self.costs["obsidian"]["ore"],
             self.costs["geode"]["ore"],
@@ -161,10 +166,9 @@ class BuildOrder:
             return None
 
         harvest_state = self._gen_next_state(state, turns)
-        qty = floor(harvest_state.i_ore / cost)
         build_state = self._gen_next_state(harvest_state, 1)
-        build_state.i_ore -= cost * qty
-        build_state.r_ore += qty 
+        build_state.i_ore -= cost
+        build_state.r_ore += 1 
 
         return build_state
 
@@ -186,19 +190,15 @@ class BuildOrder:
             return None
 
         harvest_state = self._gen_next_state(state, turns)
-        qty = floor(harvest_state.i_ore / cost)
         build_state = self._gen_next_state(harvest_state, 1)
-        build_state.i_ore -= cost * qty
-        build_state.r_clay += qty 
+        build_state.i_ore -= cost
+        build_state.r_clay += 1 
 
         return build_state
 
     def _next_obsidian_robot(self, state: State):
         if state.r_clay == 0:
-            return None
-
-        if state.r_geode >= 2 and state.r_obsidian >= state.r_geode:
-            return None
+            return "discard"
 
         max_ore_for_next_robot = max([
             self.costs["geode"]["obsidian"],
@@ -219,14 +219,10 @@ class BuildOrder:
             return None
 
         harvest_state = self._gen_next_state(state, turns)
-        qty = min([
-            floor(harvest_state.i_ore / cost_o),
-            floor(harvest_state.i_clay / cost_c),
-        ])
         build_state = self._gen_next_state(harvest_state, 1)
-        build_state.i_ore -= cost_o * qty
-        build_state.i_clay -= cost_c * qty
-        build_state.r_obsidian += qty 
+        build_state.i_ore -= cost_o
+        build_state.i_clay -= cost_c
+        build_state.r_obsidian += 1 
 
         return build_state
 
@@ -235,7 +231,7 @@ class BuildOrder:
             state.r_clay == 0 or
             state.r_obsidian == 0
         ):
-            return None
+            return "discard"
         
         cost_o = self.costs["geode"]["ore"]
         cost_b = self.costs["geode"]["obsidian"]
@@ -250,14 +246,10 @@ class BuildOrder:
             return None
 
         harvest_state = self._gen_next_state(state, turns)
-        qty = min([
-            floor(harvest_state.i_ore / cost_o),
-            floor(harvest_state.i_obsidian / cost_b),
-        ])
         build_state = self._gen_next_state(harvest_state, 1)
-        build_state.i_ore -= cost_o * qty
-        build_state.i_obsidian -= cost_b * qty
-        build_state.r_geode += qty 
+        build_state.i_ore -= cost_o
+        build_state.i_obsidian -= cost_b
+        build_state.r_geode += 1
 
         return build_state
 
@@ -285,18 +277,25 @@ class BuildOrder:
                     continue
 
                 # Possible next states
+                has_end_state = False
                 for next_state in [
                     self._next_ore_robot(state),
                     self._next_clay_robot(state),
                     self._next_obsidian_robot(state),
                     self._next_geode_robot(state),
                 ]:
+                    if next_state == "discard":
+                        continue
                     if next_state is not None:
                         queue.append(next_state)
+                    else:
+                        has_end_state = True
+                if has_end_state is True:
+                    queue.append(self._gen_next_state(state, state.timer))
 
 
-# with open("test.txt") as f:
-with open("input.txt") as f:
+fname = "test.txt" if TEST else "input.txt"
+with open(fname) as f:
     blueprints = [l.strip() for l in f.readlines()]
 
 
@@ -323,7 +322,6 @@ if int(PART) == 1:
 
 elif int(PART) == 2:
     geode_product = 1
-    # for blueprint in blueprints[1:2]:
     for blueprint in blueprints[:3]:
         bp = BuildOrder(blueprint, 32)
         max_geode = 0
