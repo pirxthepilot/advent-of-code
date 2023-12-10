@@ -2,7 +2,18 @@
 
 My measly attempts at solving the [Advent of Code](https://adventofcode.com/) challenges
 
+
 ## 2023 Notes
+
+### My favorites!
+
+* Day 6 (wow, math)
+
+### Where I struggled
+
+#### Day 5, part 2
+
+Still unsolved. Test is fine, but code is too inefficient to get the actual input solution.
 
 
 ## 2022 Notes
