@@ -1,6 +1,6 @@
 import json
 import sys
-from typing import List
+from typing import Iterator, List
 
 
 FILE = "test.txt" if len(sys.argv) == 2 and sys.argv[1] == "test" else "input.txt"
@@ -84,35 +84,52 @@ class Almanac:
             output[attribute] = getattr(self, attribute).maps
         return json.dumps(output)
     
-    def get_locs_from_seeds(self, range_mode=False) -> List[int]:
-        locs = []
-        if range_mode:
-            seeds = self.seeds
-        else:
-            seeds = self.seeds
+    def get(self, seed: int) -> int:
+        soil = self.seed_soil.get(seed)
+        fert = self.soil_fert.get(soil)
+        water = self.fert_water.get(fert)
+        light = self.water_light.get(water)
+        temp = self.light_temp.get(light)
+        humid = self.temp_humid.get(temp)
+        loc = self.humid_loc.get(humid)
+        # print(f"Seed {seed} -> Soil {soil} -> Fert {fert} -> Water {water} -> Light {light}"
+        #         f" -> Temp {temp} -> Humid {humid} -> Loc {loc}")
+        return loc
 
-        for seed in seeds:
-            soil = self.seed_soil.get(seed)
-            fert = self.soil_fert.get(soil)
-            water = self.fert_water.get(fert)
-            light = self.water_light.get(water)
-            temp = self.light_temp.get(light)
-            humid = self.temp_humid.get(temp)
-            loc = self.humid_loc.get(humid)
-            print(f"Seed {seed} -> Soil {soil} -> Fert {fert} -> Water {water} -> Light {light}"
-                  f" -> Temp {temp} -> Humid {humid} -> Loc {loc}")
-            locs.append(loc)
-        return locs
+    def get_lowest_loc_from_seeds(self, range_mode=False) -> int:
+        lowest = None
+        if range_mode:
+            for i, s in enumerate(self.seeds):
+                if i%2 == 0:  # s is base
+                    base = s
+                else:         # s is count
+                    for seed in range(base, base + s):
+                        loc = self.get(seed)
+                        if (
+                            lowest is None or
+                            loc < lowest
+                        ):
+                            lowest = loc
+                            print(f"New lowest loc: {loc}")
+        else:
+            for seed in self.seeds:
+                loc = self.get(seed)
+                if (
+                    lowest is None or
+                    loc < lowest
+                ):
+                    lowest = loc
+        return lowest
 
 
 def s1(almanac: Almanac) -> int:
     # return almanac.show()
-    return min(almanac.get_locs_from_seeds())
+    return almanac.get_lowest_loc_from_seeds()
 
 
 def s2(almanac: Almanac) -> int:
     # return almanac.show()
-    return min(almanac.get_locs_from_seeds(range_mode=True))
+    return almanac.get_lowest_loc_from_seeds(range_mode=True)
 
 
 almanac = Almanac(text)
