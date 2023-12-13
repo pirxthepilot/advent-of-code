@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import sys
-from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
 
 
 FILE = "test.txt" if len(sys.argv) == 2 and sys.argv[1] == "test" else "input.txt"
@@ -10,24 +9,6 @@ FILE = "test.txt" if len(sys.argv) == 2 and sys.argv[1] == "test" else "input.tx
 
 with open(FILE, "r") as f:
     text = [t.strip() for t in f.readlines()]
-
-
-@dataclass
-class Value:
-    value: int
-    lp: Optional[Value] = None
-    rp: Optional[Value] = None
-    l: Optional[Value] = None
-    r: Optional[Value] = None
-
-    def __repr__(self) -> str:
-        return str(self.value)
-
-    def __add__(self, other: Value) -> int:
-        return self.value + other.value
-
-    def __sub__(self, other: Value) -> int:
-        return self.value - other.value
 
 
 class History:
@@ -41,7 +22,7 @@ class History:
                 return False
         return True
 
-    def next_value(self) -> int:
+    def _get_intervals_list(self) -> List[List[int]]:
         # Get the intervals
         current_values = self.values
         levels = [current_values]
@@ -54,9 +35,11 @@ class History:
                 last_v = v
             current_values = new_values
             levels.append(current_values)
-        
+        return levels
+
+    def next_value(self) -> int:
         # Walk back to get next value
-        ends = [v[-1] for v in levels]
+        ends = [v[-1] for v in self._get_intervals_list()]
         ends.reverse()
 
         next_values = []
@@ -66,17 +49,42 @@ class History:
             if not next_values:
                 next_values.append(value + ends[idx-1])
             else:
-                next_values.append(next_values[-1] + ends[idx])
+                next_values.append(next_values[-1] + value)
 
         return next_values[-1]
 
+    def previous_value(self) -> int:
+        # Walk back to get previous value
+        starts = [v[0] for v in self._get_intervals_list()]
+        starts.reverse()
 
-def s1(text: str) -> int:
-    sum = 0
+        previous_values = []
+        for idx, value in enumerate(starts):
+            if idx == 0:
+                continue
+            if not previous_values:
+                previous_values.append(value - starts[idx-1])
+            else:
+                previous_values.append(value - previous_values[-1])
+
+        return previous_values[-1]
+
+
+def get_histories(text: str) -> List[History]:
+    histories = []
     for line in text:
-        history = History([int(i) for i in line.split(" ")])
-        sum += history.next_value()
-    return sum
+        histories.append(History([int(i) for i in line.split(" ")]))
+    return histories
 
 
-print(s1(text))
+def s1(histories: List[History]) -> int:
+    return sum([h.next_value() for h in histories])
+
+
+def s2(histories: List[History]) -> int:
+    return sum([h.previous_value() for h in histories])
+
+
+histories = get_histories(text)
+print(s1(histories))
+print(s2(histories))
