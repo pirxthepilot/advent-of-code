@@ -12,6 +12,8 @@ with open(FILE, "r") as f:
 
 
 class Image:
+    expansion_shift = 1
+
     def __init__(self, text: str):
         # Original
         galaxies = []
@@ -29,8 +31,8 @@ class Image:
 
         self.pairs = list(combinations(self.galaxies, 2))
 
-    @staticmethod
     def _expanded(
+        self,
         galaxies: List[Tuple[int]],
         all_x: Set[int],
         all_y: Set[int]
@@ -51,14 +53,14 @@ class Image:
             x_shifts = 0
             for e_x in empty_cols:
                 if x > e_x:
-                    x_shifts += 1
-            
+                    x_shifts += self.expansion_shift
+
             # Shift down (y)
             y_shifts = 0
             for e_y in empty_rows:
                 if y > e_y:
-                    y_shifts += 1
-            
+                    y_shifts += self.expansion_shift
+
             new_galaxies.append((x + x_shifts, y + y_shifts))
 
         return (new_galaxies,
@@ -88,9 +90,18 @@ class Image:
         return sum
 
 
-def s1(image: Image) -> int:
+class Image1M(Image):
+    expansion_shift = 1000000 - 1
+
+
+def s1(text: str) -> int:
+    image = Image(text)
+    return image.distance_sum()
+
+def s2(text: str) -> int:
+    image = Image1M(text)
     return image.distance_sum()
 
 
-image = Image(text)
-print(s1(image))
+print(s1(text))
+print(s2(text))
