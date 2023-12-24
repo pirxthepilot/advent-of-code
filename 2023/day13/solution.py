@@ -32,50 +32,42 @@ class Map:
         return "\n".join(self.rows)
 
     @staticmethod
-    def _get_mirror_line(values: List[str]) -> Shape:
-        queue = deque([Shape(0, len(values)-1)])
-        visited = []
+    def _get_mirror_line(values: List[str]) -> Optional[int]:
+    # def _get_mirror_line(values: List[str]) -> Shape:
+        l_val = ""
+        for r_idx, r_val in enumerate(values):
+            # Find instances where two values are identical
+            if r_val != l_val:
+                l_val = r_val
+                continue
+            
+            # Get l_idx from position of r_idx
+            l_idx = r_idx - 1
 
-        while queue:
-            shape = queue.popleft()
-            # if shape.l >= shape.r and shape.l_side:
-            #     return shape
-            if shape.l >= shape.r and shape.l_side:
-                min_distance_to_edge = min(shape.l, len(values[0]) - shape.l)
-                return shape, min_distance_to_edge
-            if shape not in visited:
-                # print(f"Comparing {shape}")
-                visited.append(shape)
-                if values[shape.l] == values[shape.r]:
-                    new_l_side = shape.l_side + [values[shape.l]]
-                    new_r_side = shape.r_side + [values[shape.r]]
-                    if new_l_side == new_r_side:
-                        # print("  Match")
-                        queue.append(Shape(
-                            shape.l+1,
-                            shape.r-1,
-                            new_l_side,
-                            new_r_side
-                        ))
+            # Fan outward both ways from the identical values to
+            # determine mirror effect
+            distance = 0
+            while l_idx - distance >= 0 and r_idx + distance < len(values):
+                # print(l_idx, r_idx, distance, len(values))
+                if values[l_idx - distance] == values[r_idx + distance]:
+                    distance += 1
                 else:
-                    queue.append(Shape(shape.l, shape.r-1))
-                    queue.append(Shape(shape.l+1, shape.r))
+                    break
+            
+            # If at the points in the distance are in either edge, it means that
+            # the line is between l_idx and r_idx
+            if (
+                distance != 0 and  # Assume line does not occur near edges
+                (l_idx - distance + 1 == 0 or r_idx + distance == len(values))
+            ):
+                return l_idx + 1
+        return None
     
     def get_vertical_line(self) -> Optional[int]:
-        shape, min_distance = self._get_mirror_line(self.cols)
-        print(f"Vert: {shape}")
-        return shape.l if len(shape.l_side) >= min_distance - 1 else None
-        # shape = self._get_mirror_line(self.cols)
-        # print(shape)
-        # return shape.l if len(shape.l_side) > 1 else None
+        return self._get_mirror_line(self.cols)
 
     def get_horizontal_line(self) -> int:
-        shape, min_distance = self._get_mirror_line(self.rows)
-        print(f"Hori: {shape}")
-        return shape.l if len(shape.l_side) >= min_distance - 1 else None
-        # shape = self._get_mirror_line(self.rows)
-        # print(shape)
-        # return shape.l if len(shape.l_side) > 1 else None
+        return self._get_mirror_line(self.rows)
 
 
 @dataclass
@@ -89,7 +81,7 @@ class Maps:
         sum_vertical = 0
         sum_horizontal = 0
         for m in maps:
-            print(f"\nEval:\n{m}\n")
+            # print(f"\nEval:\n{m}\n")
             v = m.get_vertical_line()
             if v:
                 sum_vertical += v
@@ -119,7 +111,6 @@ def get_maps() -> List[Map]:
 
 def s1(maps: Maps) -> int:
      return maps.summarize()
-     # return maps.maps[0].get_vertical_line()
 
 
 maps = Maps(get_maps())
