@@ -8,6 +8,17 @@ from typing import Dict, List, Optional, Tuple
 FILE = "test.txt" if len(sys.argv) == 2 and sys.argv[1] == "test" else "input.txt"
 
 
+def opposite(direction: str) -> str:
+    if direction == "n":
+        return "s"
+    if direction == "s":
+        return "n"
+    if direction == "e":
+        return "w"
+    if direction == "w":
+        return "e"
+    
+
 # Similar to Day 10 class
 class Rock:
     def __init__(self, x: int, y: int, type_: str = "O"):
@@ -23,21 +34,13 @@ class Rock:
         # return self.type_
         return f"({self.x},{self.y}):{self.type_}"
     
-    @staticmethod
-    def _opposite(direction: str) -> str:
-        if direction == "n":
-            return "s"
-        if direction == "s":
-            return "n"
-        if direction == "e":
-            return "w"
-        if direction == "w":
-            return "e"
-    
-    def set_neighbor(self, direction: str, other: Rock) -> None:
+    def set_neighbor(self, direction: str, other: Optional[Rock]) -> None:
         setattr(self, direction, other)
-        if getattr(other, self._opposite(direction)) != self:
-            other.set_neighbor(self._opposite(direction), self)
+        if (
+            other is not None and
+            getattr(other, opposite(direction)) != self
+        ):
+            other.set_neighbor(opposite(direction), self)
 
 
 class Platform:
@@ -80,40 +83,36 @@ class Platform:
                 display += "\n"
         print(display)
 
-    def _update_neighbors(self, rock: Rock, direction: str = "n") -> None:
-        # Search order
-        y_search_order: List[int] = []
-        x_search_order: List[int] = []
-
-        if direction in ("n", "w"):
-            y_search_order = list(range(rock.y - 1, -1, -1))
-            x_search_order = list(range(rock.x - 1, -1, -1))
-        elif direction in ("s", "e"):
-            y_search_order = list(range(rock.y, self.row_count - 1))
-            x_search_order = list(range(rock.x, self.col_count - 1))
-
-        # Link with n/s neighbor
-        # for iy in range(rock.y - 1, -1, -1):
-        for iy in y_search_order:
-            if (x, iy) in self.rocks:
-                rock.set_neighbor(
-                    "n" if direction in ("n", "w") else "s",
-                    self[(x, iy)]
-                )
-                # print(f"{rock} n neighbor is {rock.n}")
-                # print(f"  inverse: {rock.n.s}")
+    def _find_neighbor(self, rock: Rock, direction: str) -> None:
+        search_order = {
+            "n": (None, range(rock.y - 1, -1, -1)),
+            "s": (None, range(rock.y + 1, self.row_count)),
+            "e": (range(rock.x + 1, self.col_count), None),
+            "w": (range(rock.x -1, -1, -1), None),
+        }
+        x_ord, y_ord = search_order[direction]
+        locs = x_ord if y_ord is None else y_ord
+        for i in locs:
+            other: Tuple[int, int] = (
+                i if x_ord else rock.x,
+                i if y_ord else rock.y
+            )
+            if (
+                other in self.rocks and
+                getattr(self[other], opposite(direction)) is not self
+            ):
+                rock.set_neighbor(direction, self[other])
                 break
+            else:
+                rock.set_neighbor(direction, None)
 
-        # Link with e/w neighbor
-        for ix in x_search_order:
-            if (ix, y) in self.rocks:
-                rock.set_neighbor(
-                    "w" if direction in ("n", "w") else "e",
-                    self[(ix, y)]
-                )
-                # print(f"{rock} w neighbor is {rock.w}")
-                # print(f"  inverse: {rock.w.e}")
-                break
+    def _update_all(self) -> None:
+        """ Update all rocks' neighbors """
+        for rock in self.rocks.values():
+            self._find_neighbor(rock, "n")
+            self._find_neighbor(rock, "s")
+            self._find_neighbor(rock, "e")
+            self._find_neighbor(rock, "w")
 
     def add_rock(self, x, y, type_: str = "O") -> None:
         if (x, y) in self.rocks:
@@ -122,7 +121,8 @@ class Platform:
         # Instantiate and add rock to our collection
         rock = Rock(x, y, type_)
         self.rocks[(x, y)] = rock
-        self._update_neighbors(rock)
+        self._find_neighbor(rock, "n")
+        self._find_neighbor(rock, "w")
 
     def move_rock(self, rock: Rock, new_x: int, new_y: int) -> None:
         if rock.x == new_x and rock.y == new_y:
@@ -133,11 +133,6 @@ class Platform:
         rock.y = new_y
         self.rocks[(new_x, new_y)] = rock
         del self.rocks[(old_x, old_y)]
-
-    def _update_all_rocks(self) -> None:
-        for x, y in self._get_queue_order("n"):
-            if (x, y) in self.rocks:
-                self._update_neighbors(self[(x, y)])
 
     def tilt(self, direction: str) -> None:
         visited = set()
@@ -170,9 +165,8 @@ class Platform:
                         self.move_rock(rock, 0, y)
                     else:
                         self.move_rock(rock, rock.w.x + 1, y)
-                # self._update_neighbors(rock, direction)
         # Go through each rock and update neighbors
-        self._update_all_rocks()
+        self._update_all()
 
     def _get_load_map(self) -> Dict[int, int]:
         if not self._load_map:
@@ -187,6 +181,11 @@ class Platform:
                 total += self._get_load_map()[y]
         return total
 
+    def cycle(self, count: int = 1) -> None:
+        for count in range(count):
+            for d in ("n", "w", "s", "e"):
+                self.tilt(d)
+
 
 def s1(platform: Platform) -> int:
     platform.tilt("n")
@@ -196,11 +195,10 @@ def s1(platform: Platform) -> int:
 def s2(platform: Platform) -> int:
     print("Before:")
     platform.draw()
-    # for d in ("n", "w", "s", "e"):
-    for d in ("e", "s"):
-        print(f"Tilt {d}:")
-        platform.tilt(d)
-        platform.draw()
+    # platform.cycle(1000000000)
+    platform.cycle(3)
+    print("Cycle:")
+    platform.draw()
     return platform.total_load
 
 
@@ -214,5 +212,5 @@ with open(FILE, "r") as f:
     platform.col_count = x
 
 
-# print(s1(platform))
+print(s1(platform))
 print(s2(platform))
