@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import math
 import sys
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
@@ -75,13 +77,16 @@ class Platform:
 
         return self._queue_order[direction]
 
-    def draw(self) -> None:
+    def _draw_map(self) -> str:
         display = ""
         for x, y in self._get_queue_order("n"):
             display += self[(x, y)].type_ if (x, y) in self.rocks else "."
             if x != 0 and x % (self.col_count - 1) == 0:
                 display += "\n"
-        print(display)
+        return display
+
+    def draw(self) -> None:
+        print(self._draw_map())
 
     def _find_neighbor(self, rock: Rock, direction: str) -> None:
         search_order = {
@@ -186,6 +191,27 @@ class Platform:
             for d in ("n", "w", "s", "e"):
                 self.tilt(d)
 
+    def opticycle(self, repeats: int = 1) -> None:
+        results = {}
+        cycle = None
+        for count in range(1, repeats + 1):
+            for d in ("n", "w", "s", "e"):
+                self.tilt(d)
+            hash = hashlib.md5(bytes(self._draw_map(), "utf-8")).hexdigest()
+            if hash in results:
+                cycle = count - results[hash]
+                break
+            results[hash] = count
+        ffwd = ((math.floor((repeats - count) / cycle)) * cycle) + count
+        print(f"Cycle detected in run {count} with a period of {cycle}!")
+        print(f"Fast forward to run {ffwd}")
+        while ffwd < repeats:
+            ffwd += 1
+            print(f"Run {ffwd}...")
+            for d in ("n", "w", "s", "e"):
+                self.tilt(d)
+        print(f"Done!")
+
 
 def s1(platform: Platform) -> int:
     platform.tilt("n")
@@ -193,12 +219,9 @@ def s1(platform: Platform) -> int:
 
 
 def s2(platform: Platform) -> int:
-    print("Before:")
-    platform.draw()
-    # platform.cycle(1000000000)
-    platform.cycle(3)
-    print("Cycle:")
-    platform.draw()
+    # print("Before:")
+    # platform.draw()
+    platform.opticycle(1000000000) 
     return platform.total_load
 
 

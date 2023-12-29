@@ -8,12 +8,17 @@ My measly attempts at solving the [Advent of Code](https://adventofcode.com/) ch
 ### My favorites!
 
 * Day 6 (wow, math)
+* Day 14 - this was a journey, but I really had fun solving it and visualizing the map and "physics". It was very satisfying when I finally solved it.
 
 ### Where I struggled
 
 #### Day 5, part 2
 
 Still unsolved. Test is fine, but code is too inefficient to get the actual input solution.
+
+#### Day 14, part 2
+
+Lot of bugs and rewrites. When the logic was finally correct, it took forever to run. It wasn't until I got the hint from Reddit to detect cycles that I finally got the answer.
 
 
 ## 2022 Notes
