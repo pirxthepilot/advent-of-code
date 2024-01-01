@@ -9,6 +9,7 @@ My measly attempts at solving the [Advent of Code](https://adventofcode.com/) ch
 
 * Day 6 (wow, math)
 * Day 14 - this was a journey, but I really had fun solving it and visualizing the map and "physics". It was very satisfying when I finally solved it.
+* Day 16 - nice story, enjoyed the visualizing and just the right amount of difficulty for me.
 
 ### Where I struggled
 

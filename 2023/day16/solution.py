@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from collections import deque
+from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Dict, Set, Tuple
 
@@ -23,6 +24,10 @@ class Contraption:
         self.tiles = tiles
         self.cols = cols
         self.rows = rows
+        self._tiles = deepcopy(tiles)  # Copy of original tiles
+
+    def _reset_tiles(self) -> None:
+        self.tiles = deepcopy(self._tiles)
 
     def _is_outside(self, xyd: Tuple[int, int, str]) -> bool:
         x, y, _ = xyd
@@ -41,8 +46,8 @@ class Contraption:
                 display += "\n"
         print(display)
 
-    def traverse(self) -> None:
-        queue = deque([(0, 0, ">")])
+    def traverse(self, init: Tuple[int, int, str]) -> None:
+        queue = deque([init])
 
         while queue:
             x, y, dir = queue.popleft()
@@ -98,11 +103,34 @@ class Contraption:
     def energized(self) -> int:
         return sum([1 for t in self.tiles.values() if t.beams])
 
+    def find_max_energy(self) -> int:
+        init_values = []
+        # From n and s edges
+        for ix in range(self.cols):
+            init_values.append((ix, 0, "v"))
+            init_values.append((ix, self.rows-1, "^"))
+        # From w and e edges
+        for iy in range(self.rows):
+            init_values.append((0, iy, ">"))
+            init_values.append((self.cols-1, iy, "<"))
+
+        results = []
+        for init in init_values:
+            self._reset_tiles()
+            self.traverse(init)
+            results.append(self.energized)
+
+        return max(results)
+
 
 def s1(cont: Contraption) -> int:
-    cont.traverse()
+    cont.traverse((0, 0, ">"))
     # cont.draw()
     return cont.energized
+
+
+def s2(cont: Contraption) -> int:
+    return cont.find_max_energy()
 
 
 tiles = {}
@@ -113,3 +141,4 @@ with open(FILE, "r") as f:
 
 cont = Contraption(tiles, x + 1, y + 1)
 print(s1(cont))
+print(s2(cont))
