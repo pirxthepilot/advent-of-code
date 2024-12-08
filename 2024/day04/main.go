@@ -35,25 +35,22 @@ func (m Matrix) print() {
 	fmt.Println(show)
 }
 
-func (m Matrix) isXmas(x int, y int, xStep int, yStep int) bool {
+func (m Matrix) isWord(word string, x int, y int, xStep int, yStep int) bool {
 	// Check if word will exceed matrix boundaries
-	if x+(xStep*3) >= len(m[0]) ||
-		x+(xStep*3) < 0 ||
-		y+(yStep*3) >= len(m) ||
-		y+(yStep*3) < 0 {
+	if x+(xStep*(len(word)-1)) >= len(m[0]) ||
+		x+(xStep*(len(word)-1)) < 0 ||
+		y+(yStep*(len(word)-1)) >= len(m) ||
+		y+(yStep*(len(word)-1)) < 0 {
 		return false
 	}
 
 	// Check for word
-	word := fmt.Sprintf(
-		"%s%s%s%s",
-		m[x][y],
-		m[x+(xStep*1)][y+(yStep*1)],
-		m[x+(xStep*2)][y+(yStep*2)],
-		m[x+(xStep*3)][y+(yStep*3)],
-	)
-	// fmt.Printf("(%d,%d)(%d,%d): %s\n", x, y, xStep, yStep, word)
-	return word == "XMAS"
+	actualWord := ""
+	for i := range len(word) {
+		actualWord += m[x+(xStep*i)][y+(yStep*i)]
+	}
+	// fmt.Printf("(%d,%d)(%d,%d): %s\n", x, y, xStep, yStep, actualWord)
+	return word == actualWord
 }
 
 func textTo2dMatrix(text []string) Matrix {
@@ -87,36 +84,38 @@ func p1(text []string) {
 				continue
 			}
 
+			word := "XMAS"
+
 			// L-R
-			if m.isXmas(x, y, 1, 0) {
+			if m.isWord(word, x, y, 1, 0) {
 				matches++
 			}
 			// R-L
-			if m.isXmas(x, y, -1, 0) {
+			if m.isWord(word, x, y, -1, 0) {
 				matches++
 			}
 			// U-D
-			if m.isXmas(x, y, 0, 1) {
+			if m.isWord(word, x, y, 0, 1) {
 				matches++
 			}
 			// D-U
-			if m.isXmas(x, y, 0, -1) {
+			if m.isWord(word, x, y, 0, -1) {
 				matches++
 			}
 			// UL-DR
-			if m.isXmas(x, y, 1, 1) {
+			if m.isWord(word, x, y, 1, 1) {
 				matches++
 			}
 			// DR-UL
-			if m.isXmas(x, y, -1, -1) {
+			if m.isWord(word, x, y, -1, -1) {
 				matches++
 			}
 			// DL-UR
-			if m.isXmas(x, y, 1, -1) {
+			if m.isWord(word, x, y, 1, -1) {
 				matches++
 			}
 			// UR-DL
-			if m.isXmas(x, y, -1, 1) {
+			if m.isWord(word, x, y, -1, 1) {
 				matches++
 			}
 		}
@@ -125,11 +124,30 @@ func p1(text []string) {
 	fmt.Println(matches)
 }
 
-// func p2(text []string) {
-// }
+func p2(text []string) {
+	m := textTo2dMatrix(text)
+	matches := 0
+
+	for y := range len(m[0]) - 2 {
+		for x := range len(m) - 2 {
+			current := m[x][y]
+			if current != "M" && current != "S" {
+				continue
+			}
+
+			if (m.isWord("MAS", x, y, 1, 1) || m.isWord("SAM", x, y, 1, 1)) &&
+				(m.isWord("MAS", x+2, y, -1, 1) || m.isWord("SAM", x+2, y, -1, 1)) {
+				matches++
+			}
+		}
+	}
+
+	fmt.Println(matches)
+}
 
 func main() {
 	flag.Parse()
 
 	p1(utils.ReadFile(*inputFile))
+	p2(utils.ReadFile(*inputFile))
 }
