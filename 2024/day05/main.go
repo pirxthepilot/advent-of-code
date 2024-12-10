@@ -93,11 +93,75 @@ func p1(text []string) {
 	fmt.Println(sumOfMiddles)
 }
 
-// func p2(text []string) {
-// }
+func p2(text []string) {
+	rules, updates := getParts(text)
+	sumOfMiddles := 0
+
+	for _, update := range updates {
+		var middleNumber int
+		firstPass := true
+		for {
+			tryAgain := false
+			for idx, num := range update.pageNums {
+				rule := rules.getPage(num, false)
+				if rule == nil {
+					continue
+				}
+
+				prevPages := getSliceCopy(update.pageNums)[:idx]
+				nextPages := getSliceCopy(update.pageNums)[idx+1:]
+
+				// Compare previous pages
+				for _, prevNum := range prevPages {
+					if !rule.hasPrev(prevNum) {
+						tryAgain = true
+						update.switchPositions(idx, *update.getIndex(prevNum))
+						break
+					}
+				}
+
+				// Compare next pages
+				for _, nextNum := range nextPages {
+					if !rule.hasNext(nextNum) {
+						tryAgain = true
+						update.switchPositions(idx, *update.getIndex(nextNum))
+						break
+					}
+				}
+
+				// Find middle number
+				if len(prevPages) == len(nextPages) {
+					middleNumber = num
+				}
+			}
+
+			// If order is correct the first time, ignore this update and move to the next
+			if firstPass && !tryAgain {
+				break
+			}
+
+			// Do another pass if needs correction
+			if tryAgain {
+				if firstPass {
+					firstPass = false
+				}
+				continue
+			}
+
+			// Finally corrected! Do stuff
+			if !firstPass && !tryAgain {
+				sumOfMiddles += middleNumber
+				break
+			}
+		}
+	}
+
+	fmt.Println(sumOfMiddles)
+}
 
 func main() {
 	flag.Parse()
 
 	p1(utils.ReadFile(*inputFile))
+	p2(utils.ReadFile(*inputFile))
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"slices"
 	"strconv"
 	"strings"
@@ -97,7 +98,6 @@ func (r *Rules) getPage(num int, createIfNil bool) *Page {
 // Updates
 //
 
-// type Update []int
 type Update struct {
 	pageNums []int
 }
@@ -110,6 +110,23 @@ func newUpdate(text string) *Update {
 		pageNums = append(pageNums, intVal)
 	}
 	return &Update{pageNums: pageNums}
+}
+
+func (u Update) getIndex(num int) *int {
+	for i, n := range u.pageNums {
+		if n == num {
+			return &i
+		}
+	}
+	fmt.Printf("Unable to find index of %d in %v - this shouldn't happen!", num, u.pageNums)
+	return nil
+}
+
+func (u Update) switchPositions(idx1 int, idx2 int) {
+	val1 := u.pageNums[idx1]
+	val2 := u.pageNums[idx2]
+	u.pageNums[idx1] = val2
+	u.pageNums[idx2] = val1
 }
 
 type Updates []*Update
