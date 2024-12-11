@@ -3,43 +3,26 @@ package main
 import (
 	"flag"
 	"fmt"
-	"strings"
 
 	"utils"
 )
 
 var inputFile = flag.String("input", "", "Input text file")
 
-type Matrix [][]string
-
-func (m Matrix) all(yield func(string) bool) {
-	for y := range len(m[0]) {
-		for x := range m {
-			if !yield(m[x][y]) {
-				return
-			}
-		}
-	}
+type LetterMatrix struct {
+	*utils.Matrix
 }
 
-func (m Matrix) print() {
-	show := ""
-	counter := 0
-	for v := range m.all {
-		show += v
-		counter++
-		if counter%len(m[0]) == 0 {
-			show += "\n"
-		}
-	}
-	fmt.Println(show)
+func newLetterMatrix(text []string) *LetterMatrix {
+	m := utils.NewMatrix(text)
+	return &LetterMatrix{m}
 }
 
-func (m Matrix) isWord(word string, x int, y int, xStep int, yStep int) bool {
+func (m LetterMatrix) isWord(word string, x int, y int, xStep int, yStep int) bool {
 	// Check if word will exceed matrix boundaries
-	if x+(xStep*(len(word)-1)) >= len(m[0]) ||
+	if x+(xStep*(len(word)-1)) >= len(m.Elems[0]) ||
 		x+(xStep*(len(word)-1)) < 0 ||
-		y+(yStep*(len(word)-1)) >= len(m) ||
+		y+(yStep*(len(word)-1)) >= len(m.Elems) ||
 		y+(yStep*(len(word)-1)) < 0 {
 		return false
 	}
@@ -47,39 +30,18 @@ func (m Matrix) isWord(word string, x int, y int, xStep int, yStep int) bool {
 	// Check for word
 	actualWord := ""
 	for i := range len(word) {
-		actualWord += m[x+(xStep*i)][y+(yStep*i)]
+		actualWord += m.Elems[x+(xStep*i)][y+(yStep*i)]
 	}
-	// fmt.Printf("(%d,%d)(%d,%d): %s\n", x, y, xStep, yStep, actualWord)
 	return word == actualWord
 }
 
-func textTo2dMatrix(text []string) Matrix {
-	// Initialize matrix
-	rows := len(text)
-	cols := len(strings.Split(text[0], ""))
-	var matrix = make([][]string, rows)
-	for i := range matrix {
-		matrix[i] = make([]string, cols)
-	}
-
-	// Populate
-	for y, yVal := range text {
-		for x, xVal := range strings.Split(yVal, "") {
-			matrix[x][y] = xVal
-		}
-	}
-
-	return matrix
-}
-
 func p1(text []string) {
-	m := textTo2dMatrix(text)
-	// m.print()
+	m := newLetterMatrix(text)
 	matches := 0
 
-	for y := range len(m[0]) {
-		for x := range m {
-			current := m[x][y]
+	for y := range len(m.Elems[0]) {
+		for x := range m.Elems {
+			current := m.Elems[x][y]
 			if current != "X" {
 				continue
 			}
@@ -125,12 +87,12 @@ func p1(text []string) {
 }
 
 func p2(text []string) {
-	m := textTo2dMatrix(text)
+	m := newLetterMatrix(text)
 	matches := 0
 
-	for y := range len(m[0]) - 2 {
-		for x := range len(m) - 2 {
-			current := m[x][y]
+	for y := range len(m.Elems[0]) - 2 {
+		for x := range len(m.Elems) - 2 {
+			current := m.Elems[x][y]
 			if current != "M" && current != "S" {
 				continue
 			}
