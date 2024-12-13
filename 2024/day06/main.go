@@ -9,11 +9,12 @@ import (
 )
 
 const (
-	UP    = "^"
-	RIGHT = ">"
-	DOWN  = "v"
-	LEFT  = "<"
-	OBS   = "#"
+	UP     = "^"
+	RIGHT  = ">"
+	DOWN   = "v"
+	LEFT   = "<"
+	OBS    = "#"
+	NEWOBS = "0"
 )
 
 var inputFile = flag.String("input", "", "Input text file")
@@ -65,68 +66,48 @@ func (m *Map) saveState(x int, y int, direction string) {
 	m.direction = direction
 }
 
-func (m *Map) up() error {
-	newY := m.position.y - 1
-	if newY < 0 {
+func (m *Map) move(xInc int, yInc int, direction string) error {
+	var err error
+	newX := m.position.x + xInc
+	newY := m.position.y + yInc
+	if newX < 0 || newY < 0 || newX >= len(m.Elems[0]) || newY >= len(m.Elems) {
 		return fmt.Errorf("Outside the map")
 	}
-	if m.Elems[m.position.x][newY] == OBS {
-		err := m.right()
+	if m.Elems[newX][newY] == OBS {
+		if yInc == -1 {
+			err = m.right()
+		} else if xInc == 1 {
+			err = m.down()
+		} else if yInc == 1 {
+			err = m.left()
+		} else if xInc == -1 {
+			err = m.up()
+		} else {
+			panic("Impossible condition")
+		}
 		if err != nil {
 			return err
 		}
 		return nil
 	}
-	m.saveState(m.position.x, newY, UP)
+	m.saveState(newX, newY, direction)
 	return nil
+}
+
+func (m *Map) up() error {
+	return m.move(0, -1, UP)
 }
 
 func (m *Map) right() error {
-	newX := m.position.x + 1
-	if newX >= len(m.Elems[0]) {
-		return fmt.Errorf("Outside the map")
-	}
-	if m.Elems[newX][m.position.y] == OBS {
-		err := m.down()
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	m.saveState(newX, m.position.y, RIGHT)
-	return nil
+	return m.move(1, 0, RIGHT)
 }
 
 func (m *Map) down() error {
-	newY := m.position.y + 1
-	if newY >= len(m.Elems) {
-		return fmt.Errorf("Outside the map")
-	}
-	if m.Elems[m.position.x][newY] == OBS {
-		err := m.left()
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	m.saveState(m.position.x, newY, DOWN)
-	return nil
+	return m.move(0, 1, DOWN)
 }
 
 func (m *Map) left() error {
-	newX := m.position.x - 1
-	if newX < 0 {
-		return fmt.Errorf("Outside the map")
-	}
-	if m.Elems[newX][m.position.y] == OBS {
-		err := m.up()
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	m.saveState(newX, m.position.y, LEFT)
-	return nil
+	return m.move(-1, 0, LEFT)
 }
 
 func p1(text []string) {
