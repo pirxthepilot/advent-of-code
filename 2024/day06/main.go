@@ -3,18 +3,20 @@ package main
 import (
 	"flag"
 	"fmt"
+	"slices"
+	"strconv"
 	"strings"
 
 	"utils"
 )
 
 const (
-	UP     = "^"
-	RIGHT  = ">"
-	DOWN   = "v"
-	LEFT   = "<"
-	OBS    = "#"
-	NEWOBS = "0"
+	UP       = "^"
+	RIGHT    = ">"
+	DOWN     = "v"
+	LEFT     = "<"
+	OBS      = "#"
+	EXTRAOBS = "O"
 )
 
 var inputFile = flag.String("input", "", "Input text file")
@@ -26,9 +28,13 @@ type Coordinates struct {
 
 type Map struct {
 	*utils.Matrix
-	visited   map[Coordinates]bool
-	position  Coordinates
-	direction string
+	visited    map[Coordinates]bool
+	position   Coordinates
+	direction  string
+	extraObs   *Coordinates
+	extraIsHit bool
+	posTally   map[string]int
+	hasLoop    bool
 }
 
 func newMap(text []string) *Map {
@@ -45,6 +51,10 @@ func newMap(text []string) *Map {
 		map[Coordinates]bool{start: true},
 		start,
 		UP,
+		nil,
+		false,
+		map[string]int{},
+		false,
 	}
 }
 
@@ -73,7 +83,20 @@ func (m *Map) move(xInc int, yInc int, direction string) error {
 	if newX < 0 || newY < 0 || newX >= len(m.Elems[0]) || newY >= len(m.Elems) {
 		return fmt.Errorf("Outside the map")
 	}
-	if m.Elems[newX][newY] == OBS {
+	if slices.Contains([]string{OBS, EXTRAOBS}, m.Elems[newX][newY]) {
+		if m.Elems[newX][newY] == EXTRAOBS {
+			m.extraIsHit = true
+		}
+		if m.extraIsHit {
+			tallyId := strconv.Itoa(m.position.x) + "," + strconv.Itoa(m.position.y) + direction
+			m.posTally[tallyId]++
+			if m.posTally[tallyId] > 5 {
+				// Loop detected
+				// fmt.Printf("Loop detected at %s\n", tallyId)
+				m.hasLoop = true
+				return nil
+			}
+		}
 		if yInc == -1 {
 			err = m.right()
 		} else if xInc == 1 {
@@ -110,9 +133,8 @@ func (m *Map) left() error {
 	return m.move(-1, 0, LEFT)
 }
 
-func p1(text []string) {
+func (m *Map) run() {
 	var err error
-	m := newMap(text)
 	for {
 		switch m.direction {
 		case UP:
@@ -126,18 +148,60 @@ func p1(text []string) {
 		default:
 			panic("Invalid direction")
 		}
-		if err != nil {
+		if err != nil || m.hasLoop {
 			break
 		}
 	}
+}
+
+func (m *Map) addObstacle(x int, y int) error {
+	if slices.Contains([]string{OBS, UP}, m.Elems[x][y]) {
+		return fmt.Errorf("Occupied")
+	}
+	obs := &Coordinates{x, y}
+	m.extraObs = obs
+	m.Elems[x][y] = EXTRAOBS
+	return nil
+}
+
+//
+// Main
+//
+
+func p1(text []string) {
+	m := newMap(text)
+	m.run()
 	fmt.Println(len(m.visited))
 }
 
-// func p2(text []string) {
-// }
+func p2(text []string) {
+	var err error
+	tmp := newMap(text)
+
+	// tmp.addObstacle(81, 4)
+	// tmp.run()
+
+	loopingMaps := 0
+	for y := range len(tmp.Elems[0]) {
+		for x := range tmp.Elems {
+			m := newMap(text)
+			err = m.addObstacle(x, y)
+			if err != nil {
+				continue
+			}
+			// fmt.Printf("%d, %d\n", x, y)
+			m.run()
+			if m.hasLoop {
+				loopingMaps++
+			}
+		}
+	}
+	fmt.Println(loopingMaps)
+}
 
 func main() {
 	flag.Parse()
 
 	p1(utils.ReadFile(*inputFile))
+	p2(utils.ReadFile(*inputFile))
 }
