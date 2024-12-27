@@ -26,12 +26,12 @@ func allTests(text []string) func(func(int, []int) bool) {
 
 type OperationCache map[int][][]string
 
-func (o OperationCache) getOperationSets(length int) [][]string {
+func (o OperationCache) getOperationSets(values []string, length int) [][]string {
 	operationSet, ok := o[length]
 	if ok {
 		return operationSet
 	}
-	o[length] = utils.GetValueCombinations([]string{"+", "*"}, length)
+	o[length] = utils.GetValueCombinations(values, length)
 	return o[length]
 }
 
@@ -52,6 +52,8 @@ func operationIsTrue(value int, operands []int, operators []string) bool {
 			valueSoFar = valueSoFar + operands[i]
 		case "*":
 			valueSoFar = valueSoFar * operands[i]
+		case "||":
+			valueSoFar = concatInts(valueSoFar, operands[i])
 		default:
 			panic("Invalid operation")
 		}
@@ -63,12 +65,20 @@ func operationIsTrue(value int, operands []int, operators []string) bool {
 	return false
 }
 
+func concatInts(num1 int, num2 int) int {
+	result, _ := strconv.Atoi(strconv.Itoa(num1) + strconv.Itoa(num2))
+	return result
+}
+
 func p1(text []string) {
 	trueValueSum := 0
 	opCache := OperationCache{}
 
 	for value, operands := range allTests(text) {
-		operationSet := opCache.getOperationSets(len(operands) - 1)
+		operationSet := opCache.getOperationSets(
+			[]string{"+", "*"},
+			len(operands)-1,
+		)
 		// Individual tests
 		for _, ops := range operationSet {
 			if operationIsTrue(value, operands, ops) {
@@ -81,11 +91,30 @@ func p1(text []string) {
 	fmt.Println(trueValueSum)
 }
 
-// func p2(text []string) {
-// }
+func p2(text []string) {
+	trueValueSum := 0
+	opCache := OperationCache{}
+
+	for value, operands := range allTests(text) {
+		operationSet := opCache.getOperationSets(
+			[]string{"+", "*", "||"},
+			len(operands)-1,
+		)
+		// Individual tests
+		for _, ops := range operationSet {
+			if operationIsTrue(value, operands, ops) {
+				trueValueSum += value
+				break
+			}
+		}
+	}
+
+	fmt.Println(trueValueSum)
+}
 
 func main() {
 	flag.Parse()
 
 	p1(utils.ReadFile(*inputFile))
+	p2(utils.ReadFile(*inputFile))
 }
