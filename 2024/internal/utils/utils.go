@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -27,6 +28,50 @@ func ReadFile(path string) []string {
 	}
 
 	return lines
+}
+
+// []string to []int converter
+func StringToIntSlice(inputs []string) []int {
+	ints := []int{}
+	for _, v := range inputs {
+		intVal, _ := strconv.Atoi(v)
+		ints = append(ints, intVal)
+	}
+	return ints
+}
+
+// Value combinations
+func GetValueCombinations(values []string, length int) [][]string {
+	var (
+		results [][]string
+		queue   [][]string
+	)
+
+	// Initial values
+	for _, o := range values {
+		queue = append(queue, []string{o})
+	}
+
+	// Start BFS
+	for {
+		if len(queue) == 0 {
+			break
+		}
+		current := queue[0]
+		queue = queue[1:]
+		if len(current) == length {
+			results = append(results, current)
+			continue
+		}
+		for _, o := range values {
+			next := make([]string, len(current))
+			copy(next, current)
+			next = append(next, o)
+			queue = append(queue, next)
+		}
+	}
+
+	return results
 }
 
 //
