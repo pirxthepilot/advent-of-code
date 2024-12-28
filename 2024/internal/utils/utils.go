@@ -123,3 +123,9 @@ func (m Matrix) Print() {
 	}
 	fmt.Println(show)
 }
+
+// Coordinates
+type Coordinates struct {
+	X int
+	Y int
+}

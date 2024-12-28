@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
-	"strings"
 
 	"utils"
 )
@@ -21,10 +20,7 @@ const (
 
 var inputFile = flag.String("input", "", "Input text file")
 
-type Coordinates struct {
-	x int
-	y int
-}
+type Coordinates = utils.Coordinates
 
 type Map struct {
 	*utils.Matrix
@@ -40,11 +36,6 @@ type Map struct {
 func newMap(text []string) *Map {
 	m := utils.NewMatrix(text)
 	// Get start coords
-	for y, yVal := range text {
-		for x, xVal := range strings.Split(yVal, "") {
-			m.Elems[x][y] = xVal
-		}
-	}
 	start := *getStartCoordinates(m.Elems)
 	return &Map{
 		m,
@@ -62,7 +53,7 @@ func getStartCoordinates(matrix [][]string) *Coordinates {
 	for y := range len(matrix[0]) {
 		for x := range matrix {
 			if matrix[x][y] == UP {
-				return &Coordinates{x, y}
+				return &Coordinates{X: x, Y: y}
 			}
 		}
 	}
@@ -70,7 +61,7 @@ func getStartCoordinates(matrix [][]string) *Coordinates {
 }
 
 func (m *Map) saveState(x int, y int, direction string) {
-	position := &Coordinates{x, y}
+	position := &Coordinates{X: x, Y: y}
 	m.visited[*position] = true
 	m.position = *position
 	m.direction = direction
@@ -78,8 +69,8 @@ func (m *Map) saveState(x int, y int, direction string) {
 
 func (m *Map) move(xInc int, yInc int, direction string) error {
 	var err error
-	newX := m.position.x + xInc
-	newY := m.position.y + yInc
+	newX := m.position.X + xInc
+	newY := m.position.Y + yInc
 	if newX < 0 || newY < 0 || newX >= len(m.Elems[0]) || newY >= len(m.Elems) {
 		return fmt.Errorf("Outside the map")
 	}
@@ -88,7 +79,7 @@ func (m *Map) move(xInc int, yInc int, direction string) error {
 			m.extraIsHit = true
 		}
 		if m.extraIsHit {
-			tallyId := strconv.Itoa(m.position.x) + "," + strconv.Itoa(m.position.y) + direction
+			tallyId := strconv.Itoa(m.position.X) + "," + strconv.Itoa(m.position.Y) + direction
 			m.posTally[tallyId]++
 			if m.posTally[tallyId] > 5 {
 				// Loop detected
@@ -158,7 +149,7 @@ func (m *Map) addObstacle(x int, y int) error {
 	if slices.Contains([]string{OBS, UP}, m.Elems[x][y]) {
 		return fmt.Errorf("Occupied")
 	}
-	obs := &Coordinates{x, y}
+	obs := &Coordinates{X: x, Y: y}
 	m.extraObs = obs
 	m.Elems[x][y] = EXTRAOBS
 	return nil
