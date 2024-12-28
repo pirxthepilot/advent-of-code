@@ -41,15 +41,15 @@ func StringToIntSlice(inputs []string) []int {
 }
 
 // Value combinations
-func GetValueCombinations(values []string, length int) [][]string {
+func GetValueCombinations[T any](values []T, length int) [][]T {
 	var (
-		results [][]string
-		queue   [][]string
+		results [][]T
+		queue   [][]T
 	)
 
 	// Initial values
 	for _, o := range values {
-		queue = append(queue, []string{o})
+		queue = append(queue, []T{o})
 	}
 
 	// Start BFS
@@ -64,7 +64,7 @@ func GetValueCombinations(values []string, length int) [][]string {
 			continue
 		}
 		for _, o := range values {
-			next := make([]string, len(current))
+			next := make([]T, len(current))
 			copy(next, current)
 			next = append(next, o)
 			queue = append(queue, next)

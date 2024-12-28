@@ -1,4 +1,4 @@
-module github.com/pirxthepilot/advent-of-code/2024/day07
+module github.com/pirxthepilot/advent-of-code/2024/day08
 
 go 1.23.4
 
