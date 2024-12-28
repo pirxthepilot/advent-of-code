@@ -15,7 +15,8 @@ type Coordinates = utils.Coordinates
 
 type Map struct {
 	*utils.Matrix
-	antennas map[string][]Coordinates
+	antennas  map[string][]Coordinates
+	antinodes []Coordinates
 }
 
 func newMap(text []string) *Map {
@@ -41,6 +42,7 @@ func newMap(text []string) *Map {
 	return &Map{
 		&m,
 		antennas,
+		[]Coordinates{},
 	}
 }
 
@@ -57,41 +59,61 @@ func (m *Map) getCombos(antennaSymbol string) [][]Coordinates {
 	return combos
 }
 
-func (m *Map) getAntinodes() []Coordinates {
-	antinodes := []Coordinates{}
+func (m *Map) addAntinode(coords Coordinates) {
+	if !slices.Contains(m.antinodes, coords) {
+		m.antinodes = append(m.antinodes, coords)
+	}
+}
+
+func (m *Map) getAntinodes(extended bool) []Coordinates {
+	// antinodes := []Coordinates{}
 	for key := range m.antennas {
 		for _, locPairs := range m.getCombos(key) {
 			locA := locPairs[0]
 			locB := locPairs[1]
 			deltaX := locA.X - locB.X
 			deltaY := locA.Y - locB.Y
-			antinodeX := locA.X + deltaX
-			antinodeY := locA.Y + deltaY
-			if antinodeX < 0 ||
-				antinodeX >= len(m.Elems) ||
-				antinodeY < 0 ||
-				antinodeY >= len(m.Elems[0]) {
-				continue
+			if extended {
+				m.addAntinode(Coordinates{X: locA.X, Y: locA.Y})
 			}
-			c := Coordinates{X: antinodeX, Y: antinodeY}
-			if !slices.Contains(antinodes, c) {
-				antinodes = append(antinodes, Coordinates{X: antinodeX, Y: antinodeY})
+
+			currX := locA.X
+			currY := locA.Y
+			for {
+				antinodeX := currX + deltaX
+				antinodeY := currY + deltaY
+				if antinodeX < 0 ||
+					antinodeX >= len(m.Elems) ||
+					antinodeY < 0 ||
+					antinodeY >= len(m.Elems[0]) {
+					break
+				}
+				c := Coordinates{X: antinodeX, Y: antinodeY}
+				m.addAntinode(c)
+				if !extended {
+					break
+				}
+				currX = antinodeX
+				currY = antinodeY
 			}
 		}
 	}
-	return antinodes
+	return m.antinodes
 }
 
 func p1(text []string) {
 	m := newMap(text)
-	fmt.Println(len(m.getAntinodes()))
+	fmt.Println(len(m.getAntinodes(false)))
 }
 
-// func p2(text []string) {
-// }
+func p2(text []string) {
+	m := newMap(text)
+	fmt.Println(len(m.getAntinodes(true)))
+}
 
 func main() {
 	flag.Parse()
 
 	p1(utils.ReadFile(*inputFile))
+	p2(utils.ReadFile(*inputFile))
 }
