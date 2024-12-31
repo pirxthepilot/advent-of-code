@@ -3,6 +3,20 @@
 My measly attempts at solving the [Advent of Code](https://adventofcode.com/) challenges
 
 
+## 2024 Notes
+
+### My favorites
+
+* Day 5
+* Day 6 
+* Day 9 - I like the disk writing simulation
+
+### Where I struggled
+
+#### Day 9, part 2
+
+First attempt I misread the instructions. Fixed that, but program ran a bit slow. I see how it can be optimized but decided not to bother.
+
 ## 2023 Notes
 
 ### My favorites!

@@ -18,6 +18,7 @@ type File struct {
 type Disk struct {
 	blocks    map[int]string
 	totalUsed int
+	maxFileId int
 }
 
 func newDisk(text []string) *Disk {
@@ -40,6 +41,7 @@ func newDisk(text []string) *Disk {
 	}
 
 	// Use files to create a Disk
+	var maxfileId int
 	blocks := make(map[int]string)
 	bIdx := 0
 	for i, f := range files {
@@ -51,11 +53,13 @@ func newDisk(text []string) *Disk {
 			blocks[bIdx] = "."
 			bIdx++
 		}
+		maxfileId = i
 	}
 
 	return &Disk{
 		blocks,
 		len(blocks),
+		maxfileId,
 	}
 }
 
@@ -96,12 +100,64 @@ func (d *Disk) defrag() {
 	}
 }
 
+func (d *Disk) writeToDisk(fileId string, startIdx int, size int) {
+	for i := range size {
+		d.blocks[startIdx+i] = fileId
+	}
+}
+
+func (d *Disk) getFirstFreeSpace(size int) *int {
+	var startIdx int
+	freeBlocks := 0
+	for k := range len(d.blocks) {
+		if d.blocks[k] == "." {
+			if freeBlocks == 0 {
+				startIdx = k
+			}
+			freeBlocks++
+		} else if freeBlocks > 0 {
+			// File would fit in this space
+			if freeBlocks >= size {
+				return &startIdx
+			}
+			// Does not fit - reset
+			freeBlocks = 0
+		}
+	}
+	// No match
+	return nil
+}
+
+func (d *Disk) defrag2() {
+	// var fileId string
+	for k := d.maxFileId; k >= 0; k-- {
+		curFileId := strconv.Itoa(k)
+		fileSize := 0
+		for idx := d.totalUsed - 1; idx >= 0; idx-- {
+			if d.blocks[idx] == curFileId {
+				fileSize++
+			} else if fileSize > 0 {
+				freeSpaceIdx := d.getFirstFreeSpace(fileSize)
+				if freeSpaceIdx != nil {
+					if *freeSpaceIdx > idx+1 {
+						break
+					}
+					d.writeToDisk(d.blocks[idx+1], *freeSpaceIdx, fileSize)
+					d.writeToDisk(".", idx+1, fileSize)
+					break
+				}
+				fileSize = 0
+			}
+		}
+	}
+}
+
 func (d *Disk) getChecksum() int {
 	checksum := 0
 	for k := range len(d.blocks) {
 		v := d.blocks[k]
 		if v == "." {
-			break
+			continue
 		}
 		id, _ := strconv.Atoi(v)
 		checksum += k * id
@@ -115,11 +171,15 @@ func p1(text []string) {
 	fmt.Println(disk.getChecksum())
 }
 
-// func p2(text []string) {
-// }
+func p2(text []string) {
+	disk := newDisk(text)
+	disk.defrag2()
+	fmt.Println(disk.getChecksum())
+}
 
 func main() {
 	flag.Parse()
 
 	p1(utils.ReadFile(*inputFile))
+	p2(utils.ReadFile(*inputFile))
 }
