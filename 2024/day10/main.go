@@ -143,11 +143,15 @@ func p1(text []string) {
 	fmt.Println(m.getScore())
 }
 
-// func p2(text []string) {
-// }
+func p2(text []string) {
+	m := newMap(text)
+	m.findPaths()
+	fmt.Println(len(*m.paths))
+}
 
 func main() {
 	flag.Parse()
 
 	p1(utils.ReadFile(*inputFile))
+	p2(utils.ReadFile(*inputFile))
 }
